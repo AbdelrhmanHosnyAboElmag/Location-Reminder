@@ -76,4 +76,19 @@ private lateinit var localDataSource: RemindersLocalRepository
         assertThat(result.data.description, `is`(reminder.description))
         assertThat(result.data.location, `is`(reminder.location))
     }
+    @Test
+    fun getReminder_returnNoData()= runBlocking{
+        val reminder = ReminderDTO(
+            title = "star bucks",
+            description = "Drink coffee",
+            location = "san Stefano",
+            latitude = 25.33243,
+            longitude = 195.03211)
+        localDataSource.saveReminder(reminder)
+        localDataSource.deleteAllReminders()
+        // WHEN  - Task retrieved by ID.
+        val result = localDataSource.getReminder(reminder.id)
+        result as Result.Error
+        assertThat(result.message, `is`("Reminder not found!"))
+    }
 }

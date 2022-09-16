@@ -72,6 +72,19 @@ class SaveReminderViewModelTest {
     }
 
     @Test
+    fun noLocation_retrunError() = runTest{
+
+        val reminder =  ReminderDataItem(
+            title = "star bucks",
+            description = "Drink coffee",
+            location = "",
+            latitude = 25.33243,
+            longitude = 195.03211)
+        saveListViewModel.validateAndSaveReminder(reminder)
+        assertThat(saveListViewModel.showSnackBarInt.getOrAwaitValue(), `is`(R.string.err_select_location))
+    }
+
+    @Test
     fun addNullTitle_retrunError() = runTest {
         val reminder =  ReminderDataItem(
             title = "",

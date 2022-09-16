@@ -2,42 +2,32 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
-import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
-import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
-import com.google.android.gms.maps.SupportMapFragment
 import android.view.*
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.android.gms.tasks.CancellationToken
-import com.google.android.gms.tasks.CancellationTokenSource
-import com.google.android.gms.tasks.OnTokenCanceledListener
-import com.google.android.material.snackbar.Snackbar
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
-import com.udacity.project4.locationreminders.reminderslist.ReminderListFragmentDirections
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
-import java.lang.ref.ReferenceQueue
 import java.util.*
+
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
@@ -130,34 +120,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         val zoomLevel = 15f//from 1 world to 20 specific
         map.addMarker(MarkerOptions().position(yourplace).title("your place"))
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
-        setMapLongClick(map)
         setPoiClick(map)
         setMapStyle(map)
         enableMyLocation()
         onLocationSelected()
     }
 
-    private fun setMapLongClick(map: GoogleMap) {
-        map.setOnMapLongClickListener { latLng ->
-            // A Snippet is Additional text that's displayed below the title.
-            val snippet = String.format(
-                Locale.getDefault(),
-                "Lat: %1$.5f, Long: %2$.5f",
-                latLng.latitude,
-                latLng.longitude
-            )
-            map.addMarker(
-                MarkerOptions()
-                    .position(latLng)
-                    .title(getString(R.string.dropped_pin))
-                    .snippet(snippet)
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
-
-
-            )
-
-        }
-    }
 
     private fun setPoiClick(map: GoogleMap) {
         map.setOnPoiClickListener { poi ->
@@ -218,8 +186,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             map.isMyLocationEnabled = true
         }
         else {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
+            Toast.makeText(requireContext(), "please need location to add your reminder", Toast.LENGTH_SHORT).show()
+            requestPermissions(
                 arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
                 1
             )
@@ -234,6 +202,27 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
             }
             else {
+                val locationRequest = LocationRequest()
+                var locationcallback = object : LocationCallback() {
+                    override fun onLocationResult(locationResult: LocationResult) {
+                        for (location in locationResult.locations){
+                            latitude=task.latitude
+                            longitude=task.longitude
+                            val yourplace = LatLng(latitude, longitude)
+                            val zoomLevel = 15f//from 1 world to 20 specific
+                            map.addMarker(MarkerOptions().position(yourplace).title("your place"))
+                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
+                        }
+                    }
+
+                    override fun onLocationAvailability(locationAvailability: LocationAvailability) {
+                        super.onLocationAvailability(locationAvailability)
+                    }
+                }
+                fusedLocationClient.requestLocationUpdates(locationRequest,
+                    locationcallback,
+                    Looper.getMainLooper())
+
                 Log.w(TAG, "getLastLocation:exception")
             }
         }
