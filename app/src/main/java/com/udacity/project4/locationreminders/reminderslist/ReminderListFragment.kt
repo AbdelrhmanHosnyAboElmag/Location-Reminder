@@ -60,6 +60,7 @@ class ReminderListFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = this
         setupRecyclerView()
+
         binding.addReminderFAB.setOnClickListener {
             Toast.makeText(requireContext(), "LETS ADD REMINDER!!", Toast.LENGTH_SHORT).show()
             navigateToAddReminder()

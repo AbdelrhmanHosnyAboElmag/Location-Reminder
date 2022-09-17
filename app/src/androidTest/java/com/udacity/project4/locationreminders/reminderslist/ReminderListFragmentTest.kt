@@ -9,10 +9,13 @@ import androidx.navigation.Navigation
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.RootMatchers.withDecorView
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
+import com.google.android.material.internal.ContextUtils.getActivity
 import com.udacity.project4.R
 import com.udacity.project4.locationreminders.ToastMatcher
 import com.udacity.project4.locationreminders.data.ReminderDataSource
@@ -23,6 +26,7 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runBlockingTest
+import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.not
 import org.junit.Assert.*
 import org.junit.Before
@@ -135,8 +139,14 @@ class ReminderListFragmentTest: AutoCloseKoinTest() {
     @Test
     fun isToastMessageDisplayed() {
         //note need to stop animation from your device ,to not case error
-        launchFragmentInContainer<ReminderListFragment>(Bundle(),R.style.AppTheme)
+        val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(),R.style.AppTheme)
+        val navController = mock(NavController::class.java)
+        scenario.onFragment {
+            Navigation.setViewNavController(it.view!!, navController)
+        }
+        // WHEN - Click on the "+" button
         onView(withId(R.id.addReminderFAB)).perform(click())
+
         onView(withText("LETS ADD REMINDER!!")).inRoot(ToastMatcher()).check(matches(isDisplayed()))
     }
 }

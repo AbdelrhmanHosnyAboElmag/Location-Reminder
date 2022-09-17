@@ -236,9 +236,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 //                                          int[] grantResults)
                 // to handle the case where the user grants the permission. See the documentation
                 // for ActivityCompat#requestPermissions for more details.
-                map.isMyLocationEnabled = true
                 return
             }
+            map.isMyLocationEnabled = true
         }
         else {
             Toast.makeText(requireContext(), "please need location to add your reminder", Toast.LENGTH_SHORT).show()

@@ -226,7 +226,7 @@ class SaveReminderFragment : BaseFragment() {
                 currentGeofenceData.latitude!!,
                 currentGeofenceData.longitude!!,
                 GeofencingConstants.GEOFENCE_RADIUS_IN_METERS
-            )
+            ).setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
             .build()
 
@@ -237,7 +237,7 @@ class SaveReminderFragment : BaseFragment() {
 
         val client = LocationServices.getGeofencingClient(requireContext())
 
-        client.addGeofences(geofenceRequest, geofencePendingIntent).run {
+        client.addGeofences(geofenceRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
                 Toast.makeText(context, "add geofence", Toast.LENGTH_SHORT).show()
             }
