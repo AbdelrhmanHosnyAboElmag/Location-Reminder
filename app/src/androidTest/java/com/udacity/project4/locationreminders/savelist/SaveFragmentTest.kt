@@ -114,7 +114,7 @@ class SaveFragmentTest: AutoCloseKoinTest() {
 
         onView(withId(R.id.saveReminder)).perform(click())
         onView(withId(com.google.android.material.R.id.snackbar_text))
-            .check(matches(withText(R.string.err_select_location)))
+            .check(matches(withText("Please enter title")))
     }
 
 

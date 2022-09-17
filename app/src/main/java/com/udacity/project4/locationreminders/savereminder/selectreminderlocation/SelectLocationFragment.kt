@@ -25,22 +25,32 @@ import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
+import kotlinx.android.synthetic.main.it_reminder.*
 import org.koin.android.ext.android.inject
 import java.util.*
 
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
+
+
     //Use Koin to get the view model of the SaveReminder
     private var longitude: Double = 3243.9678
     private var latitude: Double =  291.1531556
-
+    lateinit var locationCallback:LocationCallback
     private lateinit var map: GoogleMap
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
     private val TAG = SelectLocationFragment::class.java.simpleName
-    private lateinit var pointOfInterest: PointOfInterest
+    private var longitudepoi: Double = 0.0
+    private var latitudepoi: Double = 0.0
+    private lateinit var Poi : PointOfInterest
+    private lateinit var namepoi: String
+
+
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationRequest: LocationRequest
+
 
 
 
@@ -58,17 +68,24 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
         setHasOptionsMenu(true)
+
         setDisplayHomeAsUpEnabled(true)
         return binding.root
     }
 
+    override fun onPause() {
+        super.onPause()
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+
+
     private fun onLocationSelected() {
         binding.floatingActionButton.setOnClickListener {
-            if (this::pointOfInterest.isInitialized) {
-                _viewModel.latitude.value = pointOfInterest.latLng.latitude
-                _viewModel.longitude.value = pointOfInterest.latLng.longitude
-                _viewModel.reminderSelectedLocationStr.value = pointOfInterest.name
-                _viewModel.selectedPOI.value = pointOfInterest
+            if (latitudepoi!=0.0||longitudepoi!=0.0) {
+                _viewModel.latitude.value = latitudepoi
+                _viewModel.longitude.value = longitudepoi
+                _viewModel.reminderSelectedLocationStr.value = namepoi
                 _viewModel.navigationCommand.value =
                     NavigationCommand.To(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
             } else {
@@ -77,11 +94,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     "please choose point of interest",
                     Toast.LENGTH_SHORT
                 ).show()
-                Log.d("testtt", pointOfInterest.latLng.latitude.toString())
-                Log.d("testtt",  pointOfInterest.latLng.longitude.toString())
-                Log.d("testtt", pointOfInterest.name.toString())
-                Log.d("testtt", pointOfInterest.latLng.latitude.toString())
-
             }
         }
     }
@@ -116,20 +128,64 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     @RequiresApi(33)
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+        locationRequest  = LocationRequest.create()
+        locationRequest.setInterval(120000) // two minute interval
+
+        locationRequest.setFastestInterval(120000)
+        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
         val yourplace = LatLng(latitude, longitude)
         val zoomLevel = 15f//from 1 world to 20 specific
         map.addMarker(MarkerOptions().position(yourplace).title("your place"))
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
         setPoiClick(map)
+        setMapLongClick(map)
         setMapStyle(map)
         enableMyLocation()
         onLocationSelected()
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult ?: return
+                for (location in locationResult.locations) {
+                    latitude=location.latitude
+                    longitude=location.longitude
+                    val yourplace = LatLng(latitude, longitude)
+                    val zoomLevel = 15f//from 1 world to 20 specific
+                    map.addMarker(MarkerOptions().position(yourplace).title("your place"))
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
+                }
+            }
+        }
+    }
+    private fun setMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            latitudepoi=latLng.latitude
+            longitudepoi=latLng.longitude
+            namepoi = "Dropped pin"
+            // A Snippet is Additional text that's displayed below the title.
+            val snippet = String.format(
+                Locale.getDefault(),
+                "Lat: %1$.5f, Long: %2$.5f",
+                latLng.latitude,
+                latLng.longitude
+            )
+            map.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title(getString(R.string.dropped_pin))
+                    .snippet(snippet)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+            )
+
+        }
     }
 
 
     private fun setPoiClick(map: GoogleMap) {
         map.setOnPoiClickListener { poi ->
-            pointOfInterest = poi
+            latitudepoi = poi.latLng.latitude
+            longitudepoi = poi.latLng.longitude
+            namepoi=poi.name
+
             val poiMarker = map.addMarker(
                 MarkerOptions()
                     .position(poi.latLng)
@@ -180,10 +236,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 //                                          int[] grantResults)
                 // to handle the case where the user grants the permission. See the documentation
                 // for ActivityCompat#requestPermissions for more details.
-
+                map.isMyLocationEnabled = true
                 return
             }
-            map.isMyLocationEnabled = true
         }
         else {
             Toast.makeText(requireContext(), "please need location to add your reminder", Toast.LENGTH_SHORT).show()
@@ -193,37 +248,17 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             )
         }
         fusedLocationClient.lastLocation.addOnSuccessListener(requireActivity()){ task ->
-            if (task.isComplete && task != null) {
+            if (task != null) {
                 latitude=task.latitude
                 longitude=task.longitude
                 val yourplace = LatLng(latitude, longitude)
                 val zoomLevel = 15f//from 1 world to 20 specific
                 map.addMarker(MarkerOptions().position(yourplace).title("your place"))
                 map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
-            }
-            else {
-                val locationRequest = LocationRequest()
-                var locationcallback = object : LocationCallback() {
-                    override fun onLocationResult(locationResult: LocationResult) {
-                        for (location in locationResult.locations){
-                            latitude=task.latitude
-                            longitude=task.longitude
-                            val yourplace = LatLng(latitude, longitude)
-                            val zoomLevel = 15f//from 1 world to 20 specific
-                            map.addMarker(MarkerOptions().position(yourplace).title("your place"))
-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(yourplace, zoomLevel))
-                        }
-                    }
-
-                    override fun onLocationAvailability(locationAvailability: LocationAvailability) {
-                        super.onLocationAvailability(locationAvailability)
-                    }
-                }
+            }else{
                 fusedLocationClient.requestLocationUpdates(locationRequest,
-                    locationcallback,
+                    locationCallback,
                     Looper.getMainLooper())
-
-                Log.w(TAG, "getLastLocation:exception")
             }
         }
 
@@ -242,6 +277,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         if (requestCode == 1) {
             if (grantResults.size > 0 && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                 enableMyLocation()
+            }
+            else{
+                Toast.makeText(requireContext(), "please let access location to know your place!!", Toast.LENGTH_SHORT).show()
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.udacity.project4.locationreminders.savereminder
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.PendingIntent
 import android.content.Intent
@@ -163,7 +164,7 @@ class SaveReminderFragment : BaseFragment() {
 
         Log.d(TAG, "Request foreground only location permission")
 
-        ActivityCompat.requestPermissions(requireActivity(), permissionsArray, resultCode)
+        requestPermissions(permissionsArray, resultCode)
     }
 
     private fun checkDeviceLocationSettingsAndStartGeofence(resolve: Boolean = true) {
@@ -214,6 +215,7 @@ class SaveReminderFragment : BaseFragment() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun addGeofenceReminder() {
 
         val currentGeofenceData = reminderData
@@ -233,39 +235,17 @@ class SaveReminderFragment : BaseFragment() {
             .addGeofence(geofence)
             .build()
 
-//no need to remove any old geofence
-//        geofencingClient.removeGeofences(geofencePendingIntent).run {
-//            addOnCompleteListener {
-//                if (ActivityCompat.checkSelfPermission(
-//                        requireContext(),
-//                        Manifest.permission.ACCESS_FINE_LOCATION
-//                    ) != PackageManager.PERMISSION_GRANTED
-//                ) {
-//                    // TODO: Consider calling
-//                    //    ActivityCompat#requestPermissions
-//                    // here to request the missing permissions, and then overriding
-//                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-//                    //                                          int[] grantResults)
-//                    // to handle the case where the user grants the permission. See the documentation
-//                    // for ActivityCompat#requestPermissions for more details.
-//                    return@addOnCompleteListener
-//                }
-//                geofencingClient.addGeofences(geofenceRequest, geofencePendingIntent).run {
-//                    addOnSuccessListener {
-//
-//                        Log.e("Add Geofence", geofence.requestId)
-//
-//                    }
-//                    addOnFailureListener {
-//
-//                        if ((it.message != null)) {
-//                            Log.w(TAG, it.message!!)
-//                        }
-//                    }
-//                }
-//            }
-//        }
-    }
+        val client = LocationServices.getGeofencingClient(requireContext())
+
+        client.addGeofences(geofenceRequest, geofencePendingIntent).run {
+            addOnSuccessListener {
+                Toast.makeText(context, "add geofence", Toast.LENGTH_SHORT).show()
+            }
+            addOnFailureListener {
+                Toast.makeText(context, "need background location permission", Toast.LENGTH_LONG).show()
+            }
+        }
+}
 
 
     override fun onDestroy() {
