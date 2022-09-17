@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
@@ -41,13 +42,19 @@ class SaveReminderFragment : BaseFragment() {
     private lateinit var binding: FragmentSaveReminderBinding
     private val runningQOrLater =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+    private lateinit var contxtt: Context
+    private  var flag: Boolean = false
+
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(requireContext(), GeofenceBroadcastReceiver::class.java)
         intent.action = GeofencingConstants.ACTION_GEOFENCE_EVENT
         PendingIntent.getBroadcast(requireContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
-
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        contxtt = context
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -79,8 +86,10 @@ class SaveReminderFragment : BaseFragment() {
             val latitude = _viewModel.latitude.value
             val longitude = _viewModel.longitude.value
             reminderData = ReminderDataItem(title, description, location, latitude, longitude)
-            if (_viewModel.validateAndSaveReminder(reminderData)) {
+            if (_viewModel.validateAndSaveReminder(reminderData)&&flag==true) {
                 checkPermissionsAndStartGeofencing()
+            }else{
+                Toast.makeText(contxtt, "please need permission", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -239,10 +248,12 @@ class SaveReminderFragment : BaseFragment() {
 
         client.addGeofences(geofenceRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
-                Toast.makeText(context, "add geofence", Toast.LENGTH_SHORT).show()
+                Toast.makeText(contxtt, "add geofence", Toast.LENGTH_SHORT).show()
+                flag=true
             }
             addOnFailureListener {
-                Toast.makeText(context, "need background location permission", Toast.LENGTH_LONG).show()
+                Toast.makeText(contxtt, "need background location permission", Toast.LENGTH_LONG).show()
+                flag=false
             }
         }
 }
