@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -43,8 +44,6 @@ class SaveReminderFragment : BaseFragment() {
     private val runningQOrLater =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
     private lateinit var contxtt: Context
-    private  var flag: Boolean = false
-
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(requireContext(), GeofenceBroadcastReceiver::class.java)
@@ -86,11 +85,10 @@ class SaveReminderFragment : BaseFragment() {
             val latitude = _viewModel.latitude.value
             val longitude = _viewModel.longitude.value
             reminderData = ReminderDataItem(title, description, location, latitude, longitude)
-            if (_viewModel.validateAndSaveReminder(reminderData)&&flag==true) {
+            if (latitude != null && longitude != null && !TextUtils.isEmpty(title)) {
                 checkPermissionsAndStartGeofencing()
-            }else{
-                Toast.makeText(contxtt, "please need permission", Toast.LENGTH_SHORT).show()
             }
+            _viewModel.validateAndSaveReminder(reminderData)
         }
     }
 
@@ -249,11 +247,9 @@ class SaveReminderFragment : BaseFragment() {
         client.addGeofences(geofenceRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
                 Toast.makeText(contxtt, "add geofence", Toast.LENGTH_SHORT).show()
-                flag=true
             }
             addOnFailureListener {
                 Toast.makeText(contxtt, "need background location permission", Toast.LENGTH_LONG).show()
-                flag=false
             }
         }
 }
