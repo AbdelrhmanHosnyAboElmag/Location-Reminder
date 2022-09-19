@@ -85,8 +85,13 @@ class SaveReminderFragment : BaseFragment() {
             val latitude = _viewModel.latitude.value
             val longitude = _viewModel.longitude.value
             reminderData = ReminderDataItem(title, description, location, latitude, longitude)
-                checkPermissionsAndStartGeofencing()
-            _viewModel.validateAndSaveReminder(reminderData)
+            if (_viewModel.validateEnteredData(reminderData)){
+                if (foregroundAndBackgroundLocationPermissionApproved()){
+                    checkDeviceLocationSettingsAndStartGeofence()
+                } else {
+                    requestForegroundAndBackgroundLocationPermissions()
+                }
+            }
         }
     }
 
@@ -245,6 +250,8 @@ class SaveReminderFragment : BaseFragment() {
         client.addGeofences(geofenceRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
                 Toast.makeText(contxtt, "add geofence", Toast.LENGTH_SHORT).show()
+                _viewModel.validateAndSaveReminder(reminderData)
+
             }
             addOnFailureListener {
                 Toast.makeText(contxtt, "need background location permission", Toast.LENGTH_LONG).show()
